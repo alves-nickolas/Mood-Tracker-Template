@@ -1,0 +1,1 @@
+This is a simple model for a mood tracker calendar in LaTeX. It implements the calendar by using pgfcalendar and defines new commands to allow for a simple user interface. Colors, legend, and date range are customizable.

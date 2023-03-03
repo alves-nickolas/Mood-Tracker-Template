@@ -1,0 +1,45 @@
+% This a LaTeX template for a mood tracker, aimed at being 
+% 1. easy to use;
+% 2. sort of cute.
+% It was written by Níckolas Alves (alves-nickolas.github.io)
+% For now, I focused more on functionality than on appearance. Perhaps future versions will be more adorable
+
+\documentclass[a4paper, 10pt]{article} % I wrote the design using a4paper, 10pt, but feel free to change. Large fonts or small paper sizes might squeeze the calendar too much, though
+\usepackage{moodtracker}
+\usepackage[sfdefault,lf]{FiraSans}
+\usepackage[margin={2cm, 2.5cm}]{geometry}
+
+%% some example colors (defined with package xcolor)
+\definecolor{PastelRed}{HTML}{ffb3ba}
+\definecolor{PastelOrange}{HTML}{ffdcb3}
+\definecolor{PastelYellow}{HTML}{ffffb3}
+\definecolor{PastelGreen}{HTML}{b3ffb3}
+\definecolor{PastelCyan}{HTML}{d0ffff}
+\definecolor{PastelBlue}{HTML}{b3ccff}
+\definecolor{PastelPurple}{HTML}{dfb3ff}
+\definecolor{PastelGray}{HTML}{e0e0e0}
+
+
+\begin{document}
+\newmood[lovely]{red}{PastelRed} % \newmood defines a new mood. The optional argument gives its name (used in the legend), the first mandatory argument gives its label and the second mandatory argument gives its color
+\newmood[hungry]{orange}{PastelOrange}
+\newmood[joyful]{yellow}{PastelYellow}
+\newmood[disgusted]{green}{PastelGreen}
+\newmood[calm]{cyan}{PastelCyan}
+\newmood[sad]{blue}{PastelBlue}
+\newmood[scared]{purple}{PastelPurple}
+\newmood[fortran programming]{gray}{PastelGray}
+
+\moodday{2023-02-26}{red}[yellow] % \moodday tags the mood of a given day. Insert the day in the yyyy-mm-dd format and the mood label. An optional argument allows to add an extra mood for the same day (e.g. for AM/PM tracking)
+\moodday{2023-01-23}{orange}
+\moodday{2023-03-17}{yellow}[red] % the order of the moods matter: the mandatory mood appears on the upper left, while the optional mood appears on the lower right
+\moodday{2023-04-01}{green}
+\moodday{2023-04-03}{cyan}
+\moodday{2023-05-19}{blue}
+\moodday{2023-06-15}{purple}
+\moodday{2023-06-25}{gray}
+
+\moodcalendar{2023-01-01}{2023-12-last} % \moodcalendar prints the mood-colored calendar from the initial date to the final date. Insert them in the yyyy-mm-dd format
+
+\moodlegend % \moodlegend prints the color legend for the different moods defined. Moods will be inserted in here even if they were not used
+\end{document}

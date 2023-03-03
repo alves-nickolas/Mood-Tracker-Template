@@ -1,0 +1,163 @@
+\ProvidesPackage{moodtracker}[2023/03/03 MoodTracker]
+\RequirePackage{xcolor} % color functionalities
+\RequirePackage{tikz} % drawing features
+\usetikzlibrary{calc}
+\RequirePackage{pgfcalendar} % calendar features
+\RequirePackage{etoolbox} % patching commands to update styles and legend when a new mood is defined
+\RequirePackage{xparse} % command creation facilities
+\RequirePackage{colortbl} % colored tabular for the legend
+\RequirePackage{array} % improved tabular for the legend
+
+\newcount\JulianDay % julian day counter
+\newcounter{MoodNumber} % number of moods
+\setcounter{MoodNumber}{0}
+
+\DeclareDocumentCommand{\moodday}{m m o}{%command to define that the day #1 is of the mood #2. Calling \moodday will append the new day to the custom pgfkey associated with the mood #2. The optional argument allows to define an additional mood for the day
+    \IfNoValueTF{#3}{
+        \pgfkeys{/pgf/calendar/#2/.add code=% mood is given by a pgfkey (see pgfcalendar documentation)
+            {%
+                \pgfcalendardatetojulian{#1}{\JulianDay}%
+                \ifnum\pgfcalendarifdatejulian=\JulianDay\relax%
+                    \pgfcalendarmatchestrue% 
+                \else%
+            }{%
+                \fi%
+            }%
+        }%
+    }{
+        \pgfkeys{/pgf/calendar/#2/antiarc/.add code=% additional mood is given by a pgfkey (see pgfcalendar documentation)
+            {%
+                \pgfcalendardatetojulian{#1}{\JulianDay}%
+                \ifnum\pgfcalendarifdatejulian=\JulianDay\relax%
+                    \pgfcalendarmatchestrue% 
+                \else%
+            }{%
+                \fi%
+            }%
+        }%
+        \pgfkeys{/pgf/calendar/#3/arc/.add code=% additional mood is given by a pgfkey (see pgfcalendar documentation)
+            {%
+                \pgfcalendardatetojulian{#1}{\JulianDay}%
+                \ifnum\pgfcalendarifdatejulian=\JulianDay\relax%
+                    \pgfcalendarmatchestrue% 
+                \else%
+            }{%
+                \fi%
+            }%
+        }%
+    }
+}
+
+
+\newcommand{\@patchhelper}{} %no action, it only plays the role of keeping position so we can use patchcmd on the fly
+
+\newcommand{\moodstyles}{%sets up the mood styles
+    \@patchhelper%
+}
+
+\newcommand{\fastcalendar}[2]{% auxiliary command typically used to draw a single month of the whole calendar. Takes initial and final dates as arguments
+    \begin{tikzpicture}
+        \pgfcalendar{cal}{#1}{#2}{%
+                \ifdate{day of month=1}{%
+                    %\pgftransformyshift{-10em}%
+                    \node at (3,5em) [anchor=center] {\large\bfseries\pgfcalendarshorthand mt};
+                    \node at (0,3em) [anchor=center] {S}; % Sunday
+                    \node at (1,3em) [anchor=center] {M}; % Monday
+                    \node at (2,3em) [anchor=center] {T}; % Tuesday
+                    \node at (3,3em) [anchor=center] {W}; % Wednesday
+                    \node at (4,3em) [anchor=center] {T}; % Thursday
+                    \node at (5,3em) [anchor=center] {F}; % Friday
+                    \node at (6,3em) [anchor=center] {S}; % Saturday
+                }{}%
+                \tikzset{filling/.style={fill=none}} % days are usually not decorated
+                \tikzset{fillingantiarc/.style={fill=none}} % days are usually not decorated
+                \tikzset{fillingarc/.style={fill=none}} % days are usually not decorated
+                \moodstyles
+                \ifnum\pgfcalendarcurrentweekday=6% Sunday on left
+                    \fill[filling] (0,0) circle(2ex);
+                    \fill[fillingantiarc] (45:2ex) arc(45:225:2ex) -- cycle;
+                    \fill[fillingarc] (45:2ex) arc(45:-135:2ex) -- cycle;
+                    \node (\pgfcalendarsuggestedname) at (0,0)
+                        [circle] {\pgfcalendarcurrentday};
+                \else% other days as usual, but with space for Sundays
+                    \fill[filling] (\pgfcalendarcurrentweekday+1,0) circle(2ex);
+                    \fill[fillingantiarc] ($(\pgfcalendarcurrentweekday+1,0)+(45:2ex)$) arc(45:225:2ex) -- cycle;
+                    \fill[fillingarc] ($(\pgfcalendarcurrentweekday+1,0)+(45:2ex)$) arc(45:-135:2ex) -- cycle;
+                    \node (\pgfcalendarsuggestedname) at (\pgfcalendarcurrentweekday+1,0)
+                        [circle] {\pgfcalendarcurrentday};
+                \fi%
+                \ifdate{Saturday}{\pgftransformyshift{-2.5em}}{}% drop a line at the end of the week
+        }
+    \end{tikzpicture}
+}
+
+\newbox\fiducialbox % standard size for a month. Helps keeping all months aligned
+
+\newcommand{\moodcalendar}[2]{% gets initial and final date and prints the calendar
+    \savebox{\fiducialbox}{\fastcalendar{2023-04-01}{2023-04-last}} %april 2023 has six weeks, so it is an example of the largest possible month
+    %\centering
+    \pgfcalendar{cal}{#1}{#2}{%
+        \ifdate{at most=01-01}{\hfill{\LARGE\bfseries\pgfcalendarcurrentyear}\hfill\null\par\vspace{2em}}{}
+        \ifdate{day of month=1}{%
+            \noindent%\mbox{%
+                \begin{minipage}[c][\ht\fiducialbox][t]{\wd\fiducialbox}%
+                    \fastcalendar{\pgfcalendarcurrentyear-\pgfcalendarcurrentmonth-01}{\pgfcalendarcurrentyear-\pgfcalendarcurrentmonth-last} % calendar for a single month
+                \end{minipage}%
+            %}%
+            \ifodd\pgfcalendarcurrentmonth%
+                \hfill % leave a space after an odd month
+            \else%
+                \par\vspace{1em} % skip a line after an even month
+            \fi%
+        }{}%
+    }
+}
+
+\DeclareDocumentCommand{\newmood}{o m m}{% define a new mood
+    % o: optional argument. Mood name (aesthetic)
+    % m: mandatory argument. Mood label (used in code)
+    % m: mandatory argument. Mood color 
+    \stepcounter{MoodNumber} % count the mood
+    
+    \pgfkeys{/pgf/calendar/#2/.code=}% initialize pgfkeys
+    \pgfkeys{/pgf/calendar/#2/antiarc/.code=}% initialize pgfkeys
+    \pgfkeys{/pgf/calendar/#2/arc/.code=}% initialize pgfkeys
+    
+    \patchcmd{\moodstyles}{\@patchhelper}{\@patchhelper%
+        \ifdate{#2}{\tikzset{filling/.style={fill=#3}}}{} % define mood color
+        \ifdate{#2/antiarc}{\tikzset{fillingantiarc/.style={fill=#3}}}{} % define mood color
+        \ifdate{#2/arc}{\tikzset{fillingarc/.style={fill=#3}}}{} % define mood color    
+    }{}{}
+    
+    \IfNoValueTF{#1}{% the mood's name is preferred, but I will use the label if necessary
+        \ifodd\c@MoodNumber
+            \patchcmd{\moodlegend}{\@patchhelper}{%
+                \centering#2\cellcolor{#3} & & \@patchhelper% left entries on legend table
+            }{}{}
+        \else%
+            \patchcmd{\moodlegend}{\@patchhelper}{%
+                \centering#2\cellcolor{#3} \tabularnewline \@patchhelper% right entries on legend table
+            }{}{}
+        \fi
+    }{
+        \ifodd\c@MoodNumber
+            \patchcmd{\moodlegend}{\@patchhelper}{%
+                \centering#1\cellcolor{#3} & & \@patchhelper% left entries on legend table
+            }{}{}
+        \else%
+            \patchcmd{\moodlegend}{\@patchhelper}{%
+                \centering#1\cellcolor{#3} \tabularnewline \@patchhelper% right entries on legend table
+            }{}{}
+        \fi
+    }
+}
+
+\newcommand{\moodlegend}{%sets up the mood legend
+    \renewcommand{\arraystretch}{1.25}
+    \begin{center}
+    \noindent\begin{tabular}{p{7cm} p{3em} p{7cm}}% sets up legend table
+        \@patchhelper%
+    \end{tabular}
+    \end{center}
+    \renewcommand{\arraystretch}{1}
+}
